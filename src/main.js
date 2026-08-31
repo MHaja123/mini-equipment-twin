@@ -532,6 +532,41 @@ function updateModelStatus(status) {
     }
   });
 }
+const alertHistory = [];
+
+function addAlert(status, temperature, timestamp) {
+  if (status === "OK") return;
+
+  const alert = {
+    status,
+    temperature,
+    time: new Date(timestamp).toLocaleTimeString()
+  };
+
+  alertHistory.unshift(alert);
+
+  if (alertHistory.length > 8) {
+    alertHistory.pop();
+  }
+
+  const historyElement = document.querySelector("#alert-history");
+
+  if (!historyElement) return;
+
+  historyElement.innerHTML = alertHistory
+    .map((item) => {
+      const icon = item.status === "CRITICAL" ? "🔴" : "🟠";
+
+      return `
+        <div class="alert-item">
+          ${icon} ${item.time} — ${item.status}
+          <br>
+          Temperature: ${item.temperature} °C
+        </div>
+      `;
+    })
+    .join("");
+}
 async function updateLiveData() {
   try {
     const response = await fetch("http://localhost:3001/api/status");
@@ -559,9 +594,17 @@ async function updateLiveData() {
 
     if (statusElement) {
       statusElement.textContent = data.status;
+      const lastUpdatedElement = document.querySelector("#last-updated");
+
+if (lastUpdatedElement) {
+  const time = new Date(data.timestamp).toLocaleTimeString();
+  lastUpdatedElement.textContent = `Last updated: ${time}`;
+}
     }
 
     updateModelStatus(data.status);
+    addAlert(data.status, data.temperature, data.timestamp);
+
   } catch (error) {
     console.error("Live data error:", error);
   }
