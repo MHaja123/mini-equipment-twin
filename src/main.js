@@ -515,3 +515,58 @@ function animate() {
 }
 
 animate();
+function updateModelStatus(status) {
+  let color;
+
+  if (status === "CRITICAL") {
+    color = 0xff0000; // Red
+  } else if (status === "WARNING") {
+    color = 0xffa500; // Orange
+  } else {
+    color = 0x00ff00; // Green
+  }
+
+  model.traverse((child) => {
+    if (child.isMesh && child.material) {
+      child.material.color.setHex(color);
+    }
+  });
+}
+async function updateLiveData() {
+  try {
+    const response = await fetch("http://localhost:3001/api/status");
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch live data");
+    }
+
+    const data = await response.json();
+
+    console.log("LIVE DATA:", data);
+
+    // Update the selected equipment panel
+    const temperatureElement = document.querySelector("#temperature");
+    const rpmElement = document.querySelector("#rpm");
+    const statusElement = document.querySelector("#status");
+
+    if (temperatureElement) {
+      temperatureElement.textContent = `${data.temperature} °C`;
+    }
+
+    if (rpmElement) {
+      rpmElement.textContent = `${data.rpm} RPM`;
+    }
+
+    if (statusElement) {
+      statusElement.textContent = data.status;
+    }
+
+    updateModelStatus(data.status);
+  } catch (error) {
+    console.error("Live data error:", error);
+  }
+}
+
+updateLiveData();
+
+setInterval(updateLiveData, 3000);
